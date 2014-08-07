@@ -3,16 +3,30 @@
 namespace PhpKansai\TodoManager\Controller;
 
 
+use PhpKansai\TodoManager\Model\TodoEntity;
+use PhpKansai\TodoManager\Model\TodoRepository;
 use Silex\Application;
 use Symfony\Component\HttpFoundation\Request;
 
 class TodoController
 {
+    /** @var \Silex\Application */
+    protected $app;
+
+    /** @var \Twig_Environment */
+    protected $twig;
+
+    /** @var TodoRepository */
+    protected $repository;
+
     /**
      * @param Application $app
      */
     function __construct($app)
     {
+        $this->app = $app;
+        $this->twig = $app['twig'];
+        $this->repository = $app['todo.repository'];
     }
 
     /**
@@ -20,7 +34,9 @@ class TodoController
      */
     public function indexAction()
     {
-        return "index page";
+        return $this->twig->render('index.html.twig', [
+            'entities' => $this->repository->findAll(),
+        ]);
     }
 
     /**
@@ -28,7 +44,16 @@ class TodoController
      */
     public function appendAction(Request $request)
     {
-        return "";
+        $content = $request->request->get('content');
+        if (!is_null($content)) {
+            $this->repository->append(TodoEntity::create($content));
+            return $this->app->redirect('/');
+        } else {
+            return $this->twig->render('index.html.twig', [
+                'error' => "正しく入力して下さい",
+                'entities' => $this->repository->findAll(),
+            ]);
+       }
     }
 
     /**
@@ -36,7 +61,23 @@ class TodoController
      */
     public function checkAjaxAction($id, Request $request)
     {
-        return "";
+        $checked = $request->get('checked');
+        if (is_null($checked)) {
+            $this->app->abort(400, "パラメーターエラー");
+        }
+
+        $todo = $this->repository->findById($id);
+        if (is_null($todo)) {
+            $this->app->abort(404, "TODOはありません");
+        }
+        if ($checked) {
+            $todo->check();
+        } else {
+            $todo->uncheck();
+        }
+        $this->repository->syncCheckStatus($todo);
+
+        return $this->app->json($todo);
     }
 
     /**
@@ -44,6 +85,11 @@ class TodoController
      */
     public function removeAction($id)
     {
-        return "";
+        $todo = $this->repository->findById($id);
+        if (is_null($todo)) {
+            $this->app->abort(404, "TODOはありません");
+        }
+        $this->repository->remove($todo);
+        return $this->app->redirect('/');
     }
 }

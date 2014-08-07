@@ -1,5 +1,9 @@
 /.idea/
 
+/composer.phar
 /vendor/
 /public/assets/
 /var/*.sqlite
+
+/public/css/app.css
+/public/js/single-button-action.js

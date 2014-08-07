@@ -1,1 +1,79 @@
-<!doctype html>
+{% extends 'layout.html.twig' %}
+
+{% block main %}
+    <div class="container">
+        {% if error is defined %}
+            <div class="alert alert-danger" role="alert">
+                <button type="button" class="close" data-dismiss="alert"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                {{ error | nl2br }}
+            </div>
+        {% endif %}
+        <div class="row">
+            <div class="col-sm-7 col-md-8">
+                <div class="panel panel-default">
+                    <table class="table panel-body todo-list">
+                        {% for todo in entities %}
+                        <tr>
+                            <td class="check">
+                                <!--suppress HtmlFormInputWithoutLabel -->
+                                <input class="complete-todo-check" type="checkbox"
+                                       data-url="/todo/{{ todo.id }}/check" {% if todo.checked %}checked{% endif %}
+                                       data-method="PATCH" />
+                            </td>
+                            <td>{{ todo.content | nl2br }}</td>
+                            <td class="remove">
+                                <button class="btn btn-link remove-todo-button"
+                                        data-url="/todo/{{ todo.id }}"
+                                        data-method="DELETE"
+                                        data-confirm="よろしいですか"><span class="glyphicon glyphicon-trash"></span> 削除</button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </table>
+                </div>
+            </div>
+            <div class="col-sm-5 col-md-4">
+                <!--suppress HtmlUnknownTarget -->
+                <form action="/todo" method="post" class="todo-form">
+                    <div class="panel panel-default">
+                        <div class="panel-body">
+                            <div class="form-group">
+                                <label class="sr-only" for="todo-content">内容</label>
+                                <textarea class="form-control" name="content" placeholder="新しいTODO"></textarea>
+                            </div>
+                        </div>
+                        <div class="panel-footer">
+                            <button class="btn btn-primary">追加</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block scripts %}
+    <script type="text/javascript" src="/js/single-button-action.js"></script>
+    <script type="text/javascript">
+        $(function() {
+            $('.complete-todo-check').singleButtonAjaxAction({
+                prepare: function() {
+                    return {
+                        checked: Number($(this).prop('checked'))
+                    };
+                },
+                done: function(data) {
+                    $(this).prop('checked', data.checked);
+                },
+                fail: function() {
+                    bootbox.alert("通信エラー。リロードしたほうがいいかも。");
+                }
+            });
+        });
+    </script>
+    <script type="text/javascript">
+        $(function() {
+            $('.remove-todo-button').singleButtonAction();
+        });
+    </script>
+{% endblock %}
